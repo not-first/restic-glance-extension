@@ -1,0 +1,35 @@
+
+def parse_widget_html(data: dict) -> str:
+    snapshot = data.get("latest_snapshot", {})
+    stats = data.get("stats", {})
+
+    snapshot_id = snapshot.get("id", "")
+    snapshot_time = snapshot.get("time", "")
+
+    method = snapshot.get("method", "")
+    method_icon = ""
+    if method == "manual":
+        method_icon = """
+        <svg data-popover-type="text" data-popover-text="Backed up manually" style="height:1em;vertical-align:middle;margin-right:0.5em;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
+        </svg>"""
+    elif method == "cron":
+        method_icon = """
+        <svg data-popover-type="text" data-popover-text="Backed up using cron" style="height:1em;vertical-align:middle;margin-right:0.5em;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" d="M1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7.75-4.25a.75.75 0 0 0-1.5 0V8c0 .414.336.75.75.75h3.25a.75.75 0 0 0 0-1.5h-2.5v-3.5Z" clip-rule="evenodd" />
+        </svg>"""
+
+    snapshots_count = stats.get("snapshots_count", "")
+    total_file_count = stats.get("file_count", "")
+    total_size = stats.get("total_size", "")
+
+    return f"""
+      <p style="display:inline-flex;align-items:center;" class="size-h4 color-highlight">
+        {method_icon}{snapshot_id} - {snapshot_time}
+      </p>
+      <ul class="list-horizontal-text color-subdued">
+        <li>{snapshots_count} snapshots</li>
+        <li>{total_file_count} files</li>
+        <li>{total_size}</li>
+      </ul>
+    """
