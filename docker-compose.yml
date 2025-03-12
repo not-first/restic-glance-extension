@@ -1,28 +1,17 @@
 services:
+  glance:
+    image: glanceapp/glance
+    # ...
+
   restic-glance-extension:
-    build: .
-
+    image: ghcr.io/not-first/restic-glance-extension
     ports:
-      - "8678:8675"
-
-    environment:
-      - REPOS=repo1,repo2
-
-      - REPO1_RESTIC_REPO=/mnt/repos/repo-1-location
-      - REPO1_RESTIC_PASSWORD=password1
-
-      - REPO2_RESTIC_REPO=/mnt/repos/repo-2-location
-      - REPO2_RESTIC_PASSWORD=password2
-      # optional environment variables below, default values are shown.
-      # If you want to use a different value, uncomment the line and set the value
-
-      # the interval in seconds after which the cache is updated
-      # - CACHE_INTERVAL=3600
-      # if the icon indicating backup method (cron or manual) should be shown. Only works with autorestic.
-      # - ENABLE_AUTORESTIC_ICON=false
-
-    restart: unless-stopped
-
+      - "8675:8675"
     volumes:
-      - /mnt/repos/repo-1-location:/mnt/repos/repo-1-location
-      - /mnt/repos/repo-2-location:/mnt/repos/repo-2-location
+      - /my/backup/location/repo1:/app/repos/repo1
+      - /my/backup/location/repo2-different-name:/app/repos/repo2
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      glance.name: Restic extension
+      glance.parent: glance
