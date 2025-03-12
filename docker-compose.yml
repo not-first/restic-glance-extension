@@ -13,5 +13,6 @@ services:
     restart: unless-stopped
     env_file: .env
     labels:
+      glance.hide: false
       glance.name: Restic extension
       glance.parent: glance
