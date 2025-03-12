@@ -14,5 +14,5 @@ services:
     env_file: .env
     labels:
       glance.hide: false
-      glance.name: Restic extension
+      glance.name: Restic Extension
       glance.parent: glance
