@@ -4,7 +4,7 @@ def parse_widget_html(data: dict) -> str:
     stats = data.get("stats", {})
 
     snapshot_id = snapshot.get("id", "")
-    snapshot_time = snapshot.get("time", "")
+    snapshot_time = snapshot.get("readable_time", "")
 
     method = snapshot.get("method", "")
     method_icon = ""

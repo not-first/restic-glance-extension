@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from src.config import config
 from src.restic import get_backup_info
+from datetime import datetime, timezone
+import humanize
 
 logging.basicConfig(format="%(levelname)s:    %(message)s", level=logging.INFO)
 logger = logging.getLogger("restic-api")
@@ -39,6 +41,10 @@ async def get_backups(repo: str, request: Request):
             content=f"<p class='color-negative'>Error: {data['error']}</p>",
             headers={"Widget-Title": "Backups", "Widget-Content-Type": "html"}
         )
+
+    snapshot_time_str = data["latest_snapshot"]["time"]
+    dt = datetime.fromisoformat(snapshot_time_str.replace("Z", "+00:00"))
+    data["latest_snapshot"]["readable_time"] = humanize.naturaltime(datetime.now(timezone.utc) - dt)
 
     # If autorestic-icon is "true", add a 'method' field based on tags
     if request.query_params.get("autorestic-icon", "false").lower() == "true":

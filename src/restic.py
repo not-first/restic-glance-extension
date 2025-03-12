@@ -35,12 +35,10 @@ def get_backup_info(repo, password):
         return stats
 
     latest_snapshot = sorted(snapshots, key=lambda s: s["time"], reverse=True)[0] # sort snapshots by time to get the latest one
-    dt = datetime.fromisoformat(latest_snapshot["time"].replace("Z", "+00:00")) # convert the time string to a datetime object
-    human_time = humanize.naturaltime(datetime.now(timezone.utc) - dt) # get the human readable time
 
     return {
         "latest_snapshot": {
-            "time": human_time,
+            "time": latest_snapshot["time"],
             "id": latest_snapshot.get("short_id", ""),
             "tags": latest_snapshot.get("tags", [])
         },
