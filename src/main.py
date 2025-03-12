@@ -1,7 +1,7 @@
 import logging
 import threading
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from src.config import config
 from src.restic import get_backup_info
@@ -21,22 +21,31 @@ cache = {}
 def update_cache():
     logger.info("Fetching initial cache for all repos")
     for repo, repo_config in config.RESTIC_CONFIG.items():
-        cache[repo] = get_backup_info(repo_config["path"], repo_config["password"])
+        final_repo_path = f"/app/repos/{repo}"
+        cache[repo] = get_backup_info(final_repo_path, repo_config["password"])
 
     while True:
         time.sleep(config.CACHE_INTERVAL)
         logger.info("Updating cache for all repos")
         for repo, repo_config in config.RESTIC_CONFIG.items():
-            cache[repo] = get_backup_info(repo_config["path"], repo_config["password"])
+            final_repo_path = f"/app/repos/{repo}"
+            cache[repo] = get_backup_info(final_repo_path, repo_config["password"])
 
 @app.get("/{repo}")
-async def get_backups(repo: str):
-    data = cache.get(repo, {"error": f"No cache available for repo '{repo}'. Have you configured it properly?"})
+async def get_backups(repo: str, request: Request):
+    data = cache.get(repo, {"error": f"No cache available for repo '{repo}'."})
     if "error" in data:
         return HTMLResponse(
             content=f"<p class='color-negative'>Error: {data['error']}</p>",
             headers={"Widget-Title": "Backups", "Widget-Content-Type": "html"}
         )
+
+    # If autorestic-icon is "true", add a 'method' field based on tags
+    if request.query_params.get("autorestic-icon", "false").lower() == "true":
+        snap_tags = data["latest_snapshot"].get("tags", [])
+        method_value = "cron" if "ar:cron" in snap_tags else "manual"
+        data["latest_snapshot"]["method"] = method_value
+
     from src.widget import parse_widget_html
     return HTMLResponse(
         content=parse_widget_html(data),

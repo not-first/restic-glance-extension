@@ -38,15 +38,11 @@ def get_backup_info(repo, password):
     dt = datetime.fromisoformat(latest_snapshot["time"].replace("Z", "+00:00")) # convert the time string to a datetime object
     human_time = humanize.naturaltime(datetime.now(timezone.utc) - dt) # get the human readable time
 
-    if config.ENABLE_AUTORESTIC_ICON:
-        snap_tags = latest_snapshot.get("tags", [])
-        method_value = "cron" if "ar:cron" in snap_tags else "manual"
-
     return {
         "latest_snapshot": {
             "time": human_time,
             "id": latest_snapshot.get("short_id", ""),
-            **({"method": method_value} if config.ENABLE_AUTORESTIC_ICON else {})
+            "tags": latest_snapshot.get("tags", [])
         },
         "stats": {
             "total_size": humanize.naturalsize(stats.get("total_size", 0)),

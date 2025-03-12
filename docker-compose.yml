@@ -3,7 +3,7 @@ services:
     image: glanceapp/glance
     # ...
 
-  restic-glance-extension:
+  restic-extension:
     image: ghcr.io/not-first/restic-glance-extension
     ports:
       - "8675:8675"
