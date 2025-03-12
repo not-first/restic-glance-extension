@@ -57,7 +57,7 @@ Next, add the extension widget into your glance page by creating an environment 
   cache: 1s # set to any time of your choice.
   allow-potentially-dangerous-html: true
 ```
-The endpoint for your restic repo is accessible on the path `/{repo-alias}`, where `{repo-alias}` is the alias set for the repo in your .env file.
+The endpoint for your restic repo is accessible on the path `/{repo-alias}`, where `{repo-alias}` is the alias set for the repo in your .env file. In the example .env above, `/repo1` or `/repo2` would be used.
 
 An optional icon can be shown to indicate the method of backup (manual or cron).
 This is detected using the tags that [autorestic](https://autorestic.vercel.app/) applies to snapshots, therefore using autorestic to manage the repo is required.
