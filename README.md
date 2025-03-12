@@ -53,10 +53,11 @@ Next, add the extension widget into your glance page by creating an environment 
 ```yml
 - type: extension
   title: My Backups
-  url: http://${RESTIC_EXTENSION_URL}
+  url: http://${RESTIC_EXTENSION_URL}/{repo-alias}
   cache: 1s # set to any time. lower times wil not impede glance loading time due to the caching in the backend.
   allow-potentially-dangerous-html: true
 ```
+The endpoint for your restic repo is accessible on the path `/{repo-alias}`, where `{repo-alias}` is the alias set for the repo in your .env file.
 
 An optional icon can be shown to indicate the method of backup (manual or cron).
 This is detected using the tags that [autorestic](https://autorestic.vercel.app/) applies to snapshots, therefore using autorestic to manage the repo is required.
