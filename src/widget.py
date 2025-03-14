@@ -1,4 +1,3 @@
-
 def parse_widget_html(data: dict) -> str:
     snapshot = data.get("latest_snapshot", {})
     stats = data.get("stats", {})
@@ -23,7 +22,10 @@ def parse_widget_html(data: dict) -> str:
     total_file_count = stats.get("file_count", "")
     total_size = stats.get("total_size", "")
 
-    return f"""
+    other_snaps = data.get("other_snapshots", [])
+    margin_bottom_class = "margin-bottom-10" if other_snaps else ""
+    main_html = f"""
+    <div class="{margin_bottom_class}">
       <p style="display:inline-flex;align-items:center;" class="size-h4 color-highlight">
         {method_icon}{snapshot_id} - {snapshot_time}
       </p>
@@ -32,4 +34,28 @@ def parse_widget_html(data: dict) -> str:
         <li>{total_file_count} files</li>
         <li>{total_size}</li>
       </ul>
+    </div>
+    """
+
+    if not other_snaps:
+        return main_html
+
+    items_html = ""
+
+    for snap in other_snaps:
+        sid = snap.get("id", "")
+        stime = snap.get("readable_time", "")
+        items_html += f"""
+        <li>
+          <ul class="list-horizontal-text">
+            <li>{sid}</li>
+            <li class="color-subdue">{stime}</li>
+          </ul>
+        </li>"""
+    return main_html + f"""
+      <div style="margin-top:1em; border-top: 1px solid var(--color-separator); padding-top:1em;">
+        <ul class="list list-gap-10 ">
+          {items_html}
+        </ul>
+      </div>
     """

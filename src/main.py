@@ -35,6 +35,7 @@ def update_cache():
 
 @app.get("/{repo}")
 async def get_backups(repo: str, request: Request):
+    limit = int(request.query_params.get("limit", 1))
     data = cache.get(repo, {"error": f"No cache available for repo '{repo}'."})
     if "error" in data:
         return HTMLResponse(
@@ -42,15 +43,20 @@ async def get_backups(repo: str, request: Request):
             headers={"Widget-Title": "Backups", "Widget-Content-Type": "html"}
         )
 
-    snapshot_time_str = data["latest_snapshot"]["time"]
-    dt = datetime.fromisoformat(snapshot_time_str.replace("Z", "+00:00"))
-    data["latest_snapshot"]["readable_time"] = humanize.naturaltime(datetime.now(timezone.utc) - dt)
+    snaps = data.get("all_snapshots", [])[:limit]
+    for s in snaps:
+        # Make sure to use short_id for consistency
+        s["id"] = s.get("short_id", "")
+        dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
+        s["readable_time"] = humanize.naturaltime(datetime.now(timezone.utc) - dt)
 
-    # If autorestic-icon is "true", add a 'method' field based on tags
     if request.query_params.get("autorestic-icon", "false").lower() == "true":
-        snap_tags = data["latest_snapshot"].get("tags", [])
-        method_value = "cron" if "ar:cron" in snap_tags else "manual"
-        data["latest_snapshot"]["method"] = method_value
+        for s in snaps:
+            tags = s.get("tags", [])
+            s["method"] = "cron" if "ar:cron" in tags else "manual"
+
+    data["latest_snapshot"] = snaps[0] if snaps else {}
+    data["other_snapshots"] = snaps[1:] if len(snaps) > 1 else []
 
     from src.widget import parse_widget_html
     return HTMLResponse(

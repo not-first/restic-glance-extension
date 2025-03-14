@@ -34,13 +34,14 @@ def get_backup_info(repo, password):
     if "error" in stats:
         return stats
 
-    latest_snapshot = sorted(snapshots, key=lambda s: s["time"], reverse=True)[0] # sort snapshots by time to get the latest one
+    sorted_snaps = sorted(snapshots, key=lambda s: s["time"], reverse=True)
 
     return {
+        "all_snapshots": sorted_snaps,
         "latest_snapshot": {
-            "time": latest_snapshot["time"],
-            "id": latest_snapshot.get("short_id", ""),
-            "tags": latest_snapshot.get("tags", [])
+            "time": sorted_snaps[0]["time"],
+            "id": sorted_snaps[0].get("short_id", ""),
+            "tags": sorted_snaps[0].get("tags", [])
         },
         "stats": {
             "total_size": humanize.naturalsize(stats.get("total_size", 0)),
