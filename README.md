@@ -56,13 +56,18 @@ Next, add the extension widget into your glance page by creating an environment 
 ```
 The endpoint for your restic repo is accessible on the path `/{repo-alias}`, where `{repo-alias}` is the alias set for the repo in your .env file. In the example .env above, `/repo1` or `/repo2` would be used.
 
-An optional icon can be shown to indicate the method of backup (manual or cron).
-This is detected using the tags that [autorestic](https://autorestic.vercel.app/) applies to snapshots, therefore using autorestic to manage the repo is required.
-
-To enable it, add the 'autorestic-icon' parameter with a value of 'true' to the extension widget:
+#### Parameters (all optional)
 ```yml
 parameters:
-  autorestic-icon: true 
+  autorestic-icon: true
+  limit: 1 
 ```
+
+`autorestic-icon`: An icon can be shown to indicate the method of backup (manual or cron). Give a value of 'true' to render it.
+This is detected using the tags that [autorestic](https://autorestic.vercel.app/) applies to snapshots, therefore using autorestic to manage the repo is required.
+
+`limit`: The number of snapshots to render. Snapshots before the most recent one will render in a compressed list. _See example below with limit set to 3_
+
+![Example of widget with limit parameter set to 3](https://github.com/user-attachments/assets/26bf76ba-9c57-431d-94a0-f9516941dcdb)
 
 ---
