@@ -1,6 +1,7 @@
 def parse_widget_html(data: dict) -> str:
     snapshot = data.get("latest_snapshot", {})
     stats = data.get("stats", {})
+    hide_file_count = data.get("hide_file_count", False)
 
     snapshot_id = snapshot.get("id", "")
     snapshot_time = snapshot.get("readable_time", "")
@@ -24,15 +25,22 @@ def parse_widget_html(data: dict) -> str:
 
     other_snaps = data.get("other_snapshots", [])
     margin_bottom_class = "margin-bottom-10" if other_snaps else ""
+
+    # Prepare stats list items based on hide_file_count parameter
+    stats_items = [f"<li>{snapshots_count} snapshots</li>"]
+    if not hide_file_count:
+        stats_items.append(f"<li>{total_file_count} files</li>")
+    stats_items.append(f"<li>{total_size}</li>")
+
+    stats_html = "".join(stats_items)
+
     main_html = f"""
     <div class="{margin_bottom_class}">
       <p style="display:inline-flex;align-items:center;" class="size-h4 color-highlight">
         {method_icon}{snapshot_id} - {snapshot_time}
       </p>
       <ul class="list-horizontal-text color-subdued">
-        <li>{snapshots_count} snapshots</li>
-        <li>{total_file_count} files</li>
-        <li>{total_size}</li>
+        {stats_html}
       </ul>
     </div>
     """

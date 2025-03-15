@@ -45,7 +45,7 @@ def get_backup_info(repo, password):
         },
         "stats": {
             "total_size": humanize.naturalsize(stats.get("total_size", 0)),
-            "file_count": stats.get("total_file_count", 0),
+            "file_count": humanize.intcomma(stats.get("total_file_count", 0)),
             "snapshots_count": stats.get("snapshots_count", 0)
         }
     }

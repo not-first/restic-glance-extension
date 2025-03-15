@@ -58,6 +58,9 @@ async def get_backups(repo: str, request: Request):
     data["latest_snapshot"] = snaps[0] if snaps else {}
     data["other_snapshots"] = snaps[1:] if len(snaps) > 1 else []
 
+    # Add hide-file-count parameter
+    data["hide_file_count"] = request.query_params.get("hide-file-count", "false").lower() == "true"
+
     from src.widget import parse_widget_html
     return HTMLResponse(
         content=parse_widget_html(data),
