@@ -46,11 +46,11 @@ Each repo alias must also have an environment variable called `{PREFIX}_RESTIC_P
   - When the cache is updated, it fetches the restic repo stats and snapshot info. The humanised time difference is calculated for each request.
 
 ### Glance Config
-Next, add the extension widget into your glance page by creating an environment variable storing the IP and port for the API, and adding this to your `glance.yml`.
+Next, add the extension widget into your glance page by adding this to your `glance.yml`.
 ```yml
 - type: extension
   title: My Backups
-  url: http://${RESTIC_EXTENSION_URL}/{repo-alias}
+  url: http://restic-extension:8675/{repo-alias}
   cache: 1s # set to any time of your choice.
   allow-potentially-dangerous-html: true
 ```
