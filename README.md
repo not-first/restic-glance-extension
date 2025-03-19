@@ -60,16 +60,16 @@ The endpoint for your restic repo is accessible on the path `/{repo-alias}`, whe
 ```yml
 parameters:
   autorestic-icon: true
-  limit: 1
   hide-file-count: true
+  limit: 1
 ```
 
 `autorestic-icon`: An icon can be shown to indicate the method of backup (manual or cron). Give a value of 'true' to render it.
 This is detected using the tags that [autorestic](https://autorestic.vercel.app/) applies to snapshots, therefore using autorestic to manage the repo is required.
 
-`limit`: The number of snapshots to render. Snapshots before the most recent one will render in a compressed list. _See example below with limit set to 3_
-
 `hide-file-count`: Set to 'true' to hide the file count from the widget, showing only the number of snapshots and total size.
+
+`limit`: The number of snapshots to render. Snapshots before the most recent one will render in a compressed list. _See example below with limit set to 3_
 
 ![Example of widget with limit parameter set to 3](https://github.com/user-attachments/assets/26bf76ba-9c57-431d-94a0-f9516941dcdb)
 
