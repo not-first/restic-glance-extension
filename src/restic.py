@@ -12,12 +12,12 @@ class ResticRepo:
             "RESTIC_PASSWORD": config["password"],
         } | config["env"]
 
-        self.repo =  config["repo"]
+        self.url =  config["url"]
 
     # run a restic command with the given arguments
     def run_restic(self, *args):
         try:
-            restic_command = ["restic", "-r", self.repo] + [*args]
+            restic_command = ["restic", "-r", self.url] + [*args]
             logger.debug(f"Running restic command: {restic_command}")
             env = os.environ.copy()
             env.update(self.env)

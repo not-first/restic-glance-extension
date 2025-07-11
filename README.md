@@ -33,8 +33,8 @@ RESTIC_REPOS=repo1,repo2
 
 REPO1_RESTIC_PASSWORD=mypassword1
 
-REPO2_RESTIC_ENV__GOOGLE_APPLICATION_CREDENTIALS=/data/credentials.json
-REPO2_RESTIC_REPO=gs:be18b21d-4de1-4a41-a6dc-20a51251b058-repo2:repo2
+REPO2_RESTIC_ENV__GOOGLE_APPLICATION_CREDENTIALS=app/config/credentials.json
+REPO2_RESTIC_URL=gs:be18b21d-4de1-4a41-a6dc-20a51251b058-repo2:repo2
 REPO2_RESTIC_PASSWORD=mypassword2
 
 RESTIC_CACHE_INTERVAL=3600
@@ -42,7 +42,7 @@ RESTIC_CACHE_INTERVAL=3600
 
 The `REPOS` variable must contain comma seperated list of repo aliases, which are simple names you assign to allow the program to differentiate between repos. Additional configuration for the alias can be supplied with an environment variable starting with `{PREFIX}_RESTIC_`, where `{PREFIX}` is the capitalised alias of the repo.
   - `{PREFIX}_RESTIC_PASSWORD`: the password for the repo (required)
-  - `{PREFIX}_RESTIC_REPO`: for restic operations, the repo url will be `app/repos/{alias}`. This env var can be used to replace the url entirely
+  - `{PREFIX}_RESTIC_URL`: for restic operations, the repo url will be `app/repos/{alias}`. This env var can be used to replace the url entirely
   - `{PREFIX}_RESTIC_ENV__{MY_ENV_VAR}`: any env var provided in this format will be passed down to any restic commands run on that repo, with the `{PREFIX}_RESTIC_ENV__` part of the name removed
 
 Local repos must have a corresponding volume mount to the folder `app/repos/{alias}`. See the provided .env.example and docker-compose.yml file above for a simple example.

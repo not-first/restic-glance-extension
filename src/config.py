@@ -11,7 +11,7 @@ class Config:
         repo_config = {
             "password": os.getenv(f"{repo_key}_RESTIC_PASSWORD"),
             "env": {},
-            "repo": os.getenv(f"{repo_key}_RESTIC_REPO", f"{REPOS_BASE_PATH}/{repo}")
+            "url": os.getenv(f"{repo_key}_RESTIC_URL", f"{REPOS_BASE_PATH}/{repo}")
         }
 
         env_var_prefix = f"{repo_key}_RESTIC_ENV__"
