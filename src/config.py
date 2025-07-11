@@ -10,6 +10,7 @@ class Config:
         }
         for repo in REPOS
     }
+    REPOS_BASE_PATH = os.getenv("RESTIC_REPOS_BASE_PATH", "app/repos").rstrip('/')
 
 
 config = Config()

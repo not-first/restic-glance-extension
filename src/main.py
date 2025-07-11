@@ -1,11 +1,13 @@
 import logging
 import threading
 import time
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from src.config import config
 from src.restic import get_backup_info
 from datetime import datetime, timezone
+from dateutil.parser import isoparse
 import humanize
 
 logging.basicConfig(format="%(levelname)s:    %(message)s", level=logging.INFO)
@@ -23,7 +25,7 @@ cache = {}
 def update_cache():
     logger.info("Fetching initial cache for all repos")
     for repo, repo_config in config.RESTIC_CONFIG.items():
-        final_repo_path = f"/app/repos/{repo}"
+        final_repo_path = os.path.abspath(f"{config.REPOS_BASE_PATH}/{repo}")
         cache[repo] = get_backup_info(final_repo_path, repo_config["password"])
 
     while True:
@@ -47,7 +49,7 @@ async def get_backups(repo: str, request: Request):
     for s in snaps:
         # Make sure to use short_id for consistency
         s["id"] = s.get("short_id", "")
-        dt = datetime.fromisoformat(s["time"].replace("Z", "+00:00"))
+        dt = isoparse(s["time"])
         s["readable_time"] = humanize.naturaltime(datetime.now(timezone.utc) - dt)
 
     if request.query_params.get("autorestic-icon", "false").lower() == "true":
