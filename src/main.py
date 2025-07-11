@@ -5,12 +5,13 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from src.config import config
-from src.restic import get_backup_info
+from src.restic import ResticRepo
 from datetime import datetime, timezone
 from dateutil.parser import isoparse
 import humanize
 
-logging.basicConfig(format="%(levelname)s:    %(message)s", level=logging.INFO)
+uvicorn_logger = logging.getLogger("uvicorn.error")
+logging.basicConfig(format="%(levelname)s:    %(message)s", level=uvicorn_logger.getEffectiveLevel())
 logger = logging.getLogger("restic-api")
 
 app = FastAPI()
@@ -20,20 +21,20 @@ async def root():
     return {"message": "Restic API is running!"}
 
 # Simply in memory cache for restic repo info
+repos = {}
 cache = {}
 
 def update_cache():
     logger.info("Fetching initial cache for all repos")
-    for repo, repo_config in config.RESTIC_CONFIG.items():
-        final_repo_path = os.path.abspath(f"{config.REPOS_BASE_PATH}/{repo}")
-        cache[repo] = get_backup_info(final_repo_path, repo_config["password"])
+    for repo_alias, repo_config in config.RESTIC_CONFIG.items():
+        repos[repo_alias] = ResticRepo(repo_config)
+        cache[repo_alias] = repos[repo_alias].get_backup_info()
 
     while True:
         time.sleep(config.CACHE_INTERVAL)
         logger.info("Updating cache for all repos")
-        for repo, repo_config in config.RESTIC_CONFIG.items():
-            final_repo_path = f"/app/repos/{repo}"
-            cache[repo] = get_backup_info(final_repo_path, repo_config["password"])
+        for repo_alias, repo in repos.items():
+            cache[repo_alias] = repo.get_backup_info()
 
 @app.get("/{repo}")
 async def get_backups(repo: str, request: Request):
