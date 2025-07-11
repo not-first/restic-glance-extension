@@ -21,7 +21,5 @@ class Config:
             repo_config["env"][k[len(env_var_prefix):]] = v
             
         RESTIC_CONFIG[repo] = repo_config
-    print(RESTIC_CONFIG)
-
 
 config = Config()

@@ -30,19 +30,29 @@ services:
 This widget must be set up be providing environment variables, which can be added to your existing glance .env file. A full environment file might look like this:
 ```env
 RESTIC_REPOS=repo1,repo2
+
 REPO1_RESTIC_PASSWORD=mypassword1
+
+REPO2_RESTIC_ENV__GOOGLE_APPLICATION_CREDENTIALS=/data/credentials.json
+REPO2_RESTIC_REPO=gs:be18b21d-4de1-4a41-a6dc-20a51251b058-repo2:repo2
 REPO2_RESTIC_PASSWORD=mypassword2
 
 RESTIC_CACHE_INTERVAL=3600
 ```
 
-The `REPOS` variable must contain comma seperated list of repo aliases, which are simple names you assign to allow the program to differentiate between repos. Note that:
-  - Each repo must have a corresponding volume mount to the folder `app/repos/{alias}`. See the provided .env.example and docker-compose.yml file above for a simple example.
-    Note that this alias does not have to correspond to the name of the repo folder on your machine. **Just where it is mounted to.**
+The `REPOS` variable must contain comma seperated list of repo aliases, which are simple names you assign to allow the program to differentiate between repos. Additional configuration for the alias can be supplied with an environment variable starting with `{PREFIX}_RESTIC_`, where `{PREFIX}` is the capitalised alias of the repo.
+  - `{PREFIX}_RESTIC_PASSWORD`: the password for the repo
+  - `{PREFIX}_RESTIC_REPO`: by default, the repo will be assumed to be `{alias}`. This env var can be used to change the repo string, to allow overriding the url scheme completely
+  - `{PREFIX}_RESTIC_ENV__{MY_ENV_VAR}`: any env var provided in this format will be passed down to any restic commands run on that repo, with the `{PREFIX}_RESTIC_ENV__` part of the name removed
 
-Each repo alias must also have an environment variable called `{PREFIX}_RESTIC_PASSWORD`, where `{PREFIX}` is the capitalised alias of the repo.
+Local repos must have a corresponding volume mount to the folder `app/repos/{alias}`. See the provided .env.example and docker-compose.yml file above for a simple example.
+Note that this alias does not have to correspond to the name of the repo folder on your machine. **Just where it is mounted to.**
 
-`RESITC_CACHE_INTERVAL` can be set to a time in seconds, where the cache will be updated with the repo info every interval. _If not supplied it defaults to 3600 (1 hour)._
+Each repo alias must also have an environment variable called `{PREFIX}_RESTIC_PASSWORD`
+
+`REPOS_BASE_PATH` can be set to change the base directory from `app/repose/{alias}` to `{REPOS_BASE_PATH}/{alias}`.
+
+`RESTIC_CACHE_INTERVAL` can be set to a time in seconds, where the cache will be updated with the repo info every interval. _If not supplied it defaults to 3600 (1 hour)._
   - When the cache is updated, it fetches the restic repo stats and snapshot info. The humanised time difference is calculated for each request.
 
 ### Glance Config
