@@ -42,13 +42,13 @@ RESTIC_CACHE_INTERVAL=3600
 
 The `REPOS` variable must contain comma seperated list of repo aliases, which are simple names you assign to allow the program to differentiate between repos. Additional configuration for the alias can be supplied with an environment variable starting with `{PREFIX}_RESTIC_`, where `{PREFIX}` is the capitalised alias of the repo.
   - `{PREFIX}_RESTIC_PASSWORD`: the password for the repo (required)
-  - `{PREFIX}_RESTIC_URL`: for restic operations, the repo url will be `app/repos/{alias}`. This env var can be used to replace the url entirely
+  - `{PREFIX}_RESTIC_URL`: for restic operations, the repo url will be `/app/repos/{alias}`. This env var can be used to replace the url entirely
   - `{PREFIX}_RESTIC_ENV__{MY_ENV_VAR}`: any env var provided in this format will be passed down to any restic commands run on that repo, with the `{PREFIX}_RESTIC_ENV__` part of the name removed
 
-Local repos must have a corresponding volume mount to the folder `app/repos/{alias}`. See the provided .env.example and docker-compose.yml file above for a simple example.
+Local repos must have a corresponding volume mount to the folder `/app/repos/{alias}`. See the provided .env.example and docker-compose.yml file above for a simple example.
 Note that this alias does not have to correspond to the name of the repo folder on your machine. **Just where it is mounted to.**
 
-`REPOS_BASE_PATH` can be set to change the base directory from `app/repos`, so the local repo urls will be computed as `{REPOS_BASE_PATH}/{alias}`.
+`REPOS_BASE_PATH` can be set to change the base directory from `/app/repos`, so the local repo urls will be computed as `{REPOS_BASE_PATH}/{alias}`.
 
 `RESTIC_CACHE_INTERVAL` can be set to a time in seconds, where the cache will be updated with the repo info every interval. _If not supplied it defaults to 3600 (1 hour)._
   - When the cache is updated, it fetches the restic repo stats and snapshot info. The humanised time difference is calculated for each request.
