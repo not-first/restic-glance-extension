@@ -3,7 +3,7 @@ _An extension widget API for the [Glance](https://github.com/glanceapp/glance) d
 
 ![Widget screenshot](https://github.com/user-attachments/assets/15b0dc61-6328-4222-8282-ec64691a239b)
 
-A simple widget that shows information about the latest snapshot in a restic repo.
+A simple widget that shows information about the latest snapshot in a restic repo. _Only local directories are currently supported._
 Displays the short ID of the latest snapshot, and the time it was created in a human readable form. Also includes general information about the repo.
 Optionally, if [autorestic](https://autorestic.vercel.app/) is being used to back up it can show a small icon to indicate whether the backup was automatic or manual.
 
