@@ -53,6 +53,12 @@ Note that this alias does not have to correspond to the name of the repo folder 
 `RESTIC_CACHE_INTERVAL` can be set to a time in seconds, where the cache will be updated with the repo info every interval. _If not supplied it defaults to 3600 (1 hour)._
   - When the cache is updated, it fetches the restic repo stats and snapshot info. The humanised time difference is calculated for each request.
 
+`RESTIC_REPOS_MODE` can be set to specify the mode for the `restic stats` command. Valid values are:
+  - `restore-size` (default)
+  - `files-by-contents`
+  - `raw-data`
+  - `blobs-per-file`
+
 ### Glance Config
 Next, add the extension widget into your glance page by adding this to your `glance.yml`.
 ```yml

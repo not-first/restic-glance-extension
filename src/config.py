@@ -5,6 +5,7 @@ class Config:
     CACHE_INTERVAL = int(os.getenv("RESTIC_CACHE_INTERVAL", 3600))
     REPOS = os.getenv("RESTIC_REPOS", "").split(",")
     REPOS_BASE_PATH = os.getenv("RESTIC_REPOS_BASE_PATH", "/app/repos").rstrip('/')
+    REPOS_MODE = os.getenv("RESTIC_REPOS_MODE", "restore-size")
     RESTIC_CONFIG = {}
     for repo in REPOS:
         repo_key = repo.upper().replace('-', '_')
@@ -21,6 +22,5 @@ class Config:
             repo_config["env"][k[len(env_var_prefix):]] = v
 
         RESTIC_CONFIG[repo] = repo_config
-    print("Restic Config:", RESTIC_CONFIG)  # Debugging line to check the configuration
 
 config = Config()

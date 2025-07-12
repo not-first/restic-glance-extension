@@ -45,7 +45,9 @@ class ResticRepo:
         if "error" in snapshots:
             return snapshots
 
-        stats = self.run_restic("stats", "--json", "--mode", "raw-data")
+        # use the mode from the environment variable
+        mode = self.env.get("RESTIC_REPOS_MODE", "restore-size")
+        stats = self.run_restic("stats", "--json", "--mode", mode)
         if "error" in stats:
             return stats
 
