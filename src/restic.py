@@ -3,8 +3,11 @@ import json
 import logging
 import humanize
 import os
+from src.config import config as global_config
 
 logger = logging.getLogger("restic-api")
+
+
 class ResticRepo:
     def __init__(self, config):
         self.password = config["password"]
@@ -12,7 +15,7 @@ class ResticRepo:
             "RESTIC_PASSWORD": config["password"],
         } | config["env"]
 
-        self.url =  config["url"]
+        self.url = config["url"]
 
     # run a restic command with the given arguments
     def run_restic(self, *args):
@@ -22,10 +25,7 @@ class ResticRepo:
             env = os.environ.copy()
             env.update(self.env)
             result = subprocess.run(
-                restic_command,
-                capture_output=True,
-                text=True,
-                env=env
+                restic_command, capture_output=True, text=True, env=env
             )
 
             if result.returncode != 0:
@@ -33,11 +33,12 @@ class ResticRepo:
                 return {"error": result.stderr.strip()}
 
             return (
-                json.loads(result.stdout) if result.stdout else {"error": "Empty response"}
+                json.loads(result.stdout)
+                if result.stdout
+                else {"error": "Empty response"}
             )
         except Exception as e:
             return {"error": str(e)}
-
 
     # get backup info for a given repository
     def get_backup_info(self):
@@ -46,7 +47,7 @@ class ResticRepo:
             return snapshots
 
         # use the mode from the environment variable
-        mode = self.env.get("RESTIC_REPOS_MODE", "restore-size")
+        mode = global_config.REPOS_MODE
         stats = self.run_restic("stats", "--json", "--mode", mode)
         if "error" in stats:
             return stats
