@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Install dependencies
 RUN apt-get update && apt-get install -y restic rclone && rm -rf /var/lib/apt/lists/*
