@@ -4,7 +4,7 @@ from src.types import RepoConfig
 
 logger = logging.getLogger("restic-api")
 
-VALID_STATS_MODES = {"restore-size", "files-by-contents", "raw-data", "blobs-per-file"}
+VALID_STATS_MODES = {"repository-size", "latest-snapshot"}
 
 
 class ConfigurationError(Exception):
@@ -18,7 +18,7 @@ class Config:
     CACHE_INTERVAL: int
     REPOS: list[str]
     REPOS_BASE_PATH: str
-    REPOS_MODE: str
+    STATS_MODE: str
     RESTIC_CONFIG: dict[str, RepoConfig]
 
     def __init__(self) -> None:
@@ -46,12 +46,12 @@ class Config:
         self.REPOS_BASE_PATH = os.getenv("RESTIC_REPOS_BASE_PATH", "/app/repos").rstrip(
             "/"
         )
-        self.REPOS_MODE = os.getenv("RESTIC_REPOS_MODE", "restore-size")
+        self.STATS_MODE = os.getenv("RESTIC_STATS_MODE", "repository-size")
 
         # validate stats mode
-        if self.REPOS_MODE not in VALID_STATS_MODES:
+        if self.STATS_MODE not in VALID_STATS_MODES:
             raise ConfigurationError(
-                f"RESTIC_REPOS_MODE must be one of {VALID_STATS_MODES}, got '{self.REPOS_MODE}'"
+                f"RESTIC_STATS_MODE must be one of {VALID_STATS_MODES}, got '{self.STATS_MODE}'"
             )
 
         # load repo configurations
@@ -81,6 +81,17 @@ class Config:
                     continue
                 repo_config["env"][k[len(env_var_prefix) :]] = v
 
+            # check for per-repo stats mode override
+            repo_stats_mode = os.getenv(f"{repo_key}_RESTIC_STATS_MODE")
+            if repo_stats_mode:
+                if repo_stats_mode not in VALID_STATS_MODES:
+                    raise ConfigurationError(
+                        f"Invalid stats mode for repo '{repo}': {repo_key}_RESTIC_STATS_MODE "
+                        f"must be one of {VALID_STATS_MODES}, got '{repo_stats_mode}'"
+                    )
+                repo_config["stats_mode"] = repo_stats_mode
+                logger.info(f"using stats mode '{repo_stats_mode}' for repo: {repo}")
+
             self.RESTIC_CONFIG[repo] = repo_config
             logger.info(f"configured repository: {repo} -> {repo_config['url']}")
 
@@ -91,7 +102,7 @@ class Config:
 
         logger.info(
             f"configuration validated: {len(self.RESTIC_CONFIG)} repositories, "
-            f"{self.CACHE_INTERVAL}s cache interval, mode={self.REPOS_MODE}"
+            f"{self.CACHE_INTERVAL}s cache interval, mode={self.STATS_MODE}"
         )
 
 

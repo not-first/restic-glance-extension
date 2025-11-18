@@ -61,3 +61,4 @@ class RepoConfig(TypedDict):
     password: str
     url: str
     env: dict[str, str]
+    stats_mode: NotRequired[str]

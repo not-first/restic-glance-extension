@@ -33,7 +33,9 @@ async def update_cache_periodically() -> None:
     for repo_alias, repo_config in config.RESTIC_CONFIG.items():
         repos[repo_alias] = ResticRepo(repo_config)
         try:
-            cache[repo_alias] = repos[repo_alias].get_backup_info()
+            # use per-repo stats mode if set, otherwise use global default
+            stats_mode = repo_config.get("stats_mode", config.STATS_MODE)
+            cache[repo_alias] = repos[repo_alias].get_backup_info(stats_mode)
             logger.info(f"initial cache populated for repo: {repo_alias}")
         except Exception as e:
             logger.error(f"failed to populate initial cache for repo {repo_alias}: {e}")
@@ -46,7 +48,10 @@ async def update_cache_periodically() -> None:
 
         for repo_alias, repo in repos.items():
             try:
-                cache[repo_alias] = repo.get_backup_info()
+                # use per-repo stats mode if set, otherwise use global default
+                repo_config = config.RESTIC_CONFIG[repo_alias]
+                stats_mode = repo_config.get("stats_mode", config.STATS_MODE)
+                cache[repo_alias] = repo.get_backup_info(stats_mode)
                 logger.debug(f"cache updated for repo: {repo_alias}")
             except Exception as e:
                 logger.error(f"failed to update cache for repo {repo_alias}: {e}")

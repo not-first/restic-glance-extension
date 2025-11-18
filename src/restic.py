@@ -65,7 +65,9 @@ class ResticRepo:
             return {"error": str(e)}
 
     # get backup info for a given repository
-    def get_backup_info(self) -> BackupInfo | dict[str, str]:
+    def get_backup_info(
+        self, stats_mode: str = "repository-size"
+    ) -> BackupInfo | dict[str, str]:
         snapshots = self.run_restic("snapshots", "--json")
         if "error" in snapshots:
             logger.warning(f"failed to fetch snapshots: {snapshots['error']}")
@@ -75,16 +77,26 @@ class ResticRepo:
             logger.error(f"unexpected snapshots response type: {type(snapshots)}")
             return {"error": "invalid snapshots response format"}
 
-        # use the mode from the environment variable
-        mode = global_config.REPOS_MODE
-        stats = self.run_restic("stats", "--json", "--mode", mode)
-        if "error" in stats:
-            logger.warning(f"failed to fetch stats: {stats['error']}")
-            return stats
-
         if not snapshots:
             logger.warning("no snapshots found in repository")
             return {"error": "no snapshots available"}
+
+        # map stats mode to restic command
+        if stats_mode == "repository-size":
+            # show actual disk usage of the repository
+            stats = self.run_restic("stats", "--json", "--mode", "raw-data")
+        elif stats_mode == "latest-snapshot":
+            # show restore size of the latest snapshot only
+            stats = self.run_restic(
+                "stats", "latest", "--json", "--mode", "restore-size"
+            )
+        else:
+            logger.error(f"invalid stats mode: {stats_mode}")
+            return {"error": f"invalid stats mode: {stats_mode}"}
+
+        if "error" in stats:
+            logger.warning(f"failed to fetch stats: {stats['error']}")
+            return stats
 
         sorted_snaps: list[SnapshotData] = sorted(
             snapshots, key=lambda s: s["time"], reverse=True

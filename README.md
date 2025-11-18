@@ -30,12 +30,14 @@ services:
 This widget must be set up be providing environment variables, which can be added to your existing glance .env file. A full environment file might look like this:
 ```env
 RESTIC_REPOS=repo1,repo2
+RESTIC_STATS_MODE=repository-size
 
 REPO1_RESTIC_PASSWORD=mypassword1
 
 REPO2_RESTIC_ENV__GOOGLE_APPLICATION_CREDENTIALS=app/config/credentials.json
 REPO2_RESTIC_URL=gs:be18b21d-4de1-4a41-a6dc-20a51251b058-repo2:repo2
 REPO2_RESTIC_PASSWORD=mypassword2
+REPO2_RESTIC_STATS_MODE=latest-snapshot
 
 RESTIC_CACHE_INTERVAL=3600
 ```
@@ -43,6 +45,7 @@ RESTIC_CACHE_INTERVAL=3600
 The `REPOS` variable must contain comma seperated list of repo aliases, which are simple names you assign to allow the program to differentiate between repos. Additional configuration for the alias can be supplied with an environment variable starting with `{PREFIX}_RESTIC_`, where `{PREFIX}` is the capitalised alias of the repo.
   - `{PREFIX}_RESTIC_PASSWORD`: the password for the repo (required)
   - `{PREFIX}_RESTIC_URL`: for restic operations, the repo url will be `/app/repos/{alias}`. This env var can be used to replace the url entirely
+  - `{PREFIX}_RESTIC_STATS_MODE`: override the global stats mode for this specific repo (optional)
   - `{PREFIX}_RESTIC_ENV__{MY_ENV_VAR}`: any env var provided in this format will be passed down to any restic commands run on that repo, with the `{PREFIX}_RESTIC_ENV__` part of the name removed
 
 Local repos must have a corresponding volume mount to the folder `/app/repos/{alias}`. See the provided .env.example and docker-compose.yml file above for a simple example.
@@ -53,11 +56,11 @@ Note that this alias does not have to correspond to the name of the repo folder 
 `RESTIC_CACHE_INTERVAL` can be set to a time in seconds, where the cache will be updated with the repo info every interval. _If not supplied it defaults to 3600 (1 hour)._
   - When the cache is updated, it fetches the restic repo stats and snapshot info. The humanised time difference is calculated for each request.
 
-`RESTIC_REPOS_MODE` can be set to specify the mode for the `restic stats` command. Valid values are:
-  - `restore-size` (default)
-  - `files-by-contents`
-  - `raw-data`
-  - `blobs-per-file`
+`RESTIC_STATS_MODE` determines what statistics are displayed for your repositories. Valid values are:
+  - `repository-size` (default): Shows the actual disk space used by the repository on your storage backend. This represents the total size of all backup data including deduplication.
+  - `latest-snapshot`: Shows the restore size of only the most recent snapshot. This represents how much disk space would be needed to restore the latest backup.
+
+You can override this setting per-repository using `{PREFIX}_RESTIC_STATS_MODE`. For example, you might want most repos to show disk usage but one specific repo to show latest snapshot size.
 
 ### Glance Config
 Next, add the extension widget into your glance page by adding this to your `glance.yml`.
