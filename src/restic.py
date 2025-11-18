@@ -105,7 +105,7 @@ class ResticRepo:
         stats_data: StatsData = {
             "total_size": stats.get("total_size", 0),
             "file_count": stats.get("total_file_count", 0),
-            "snapshots_count": stats.get("snapshots_count", 0),
+            "snapshots_count": len(sorted_snaps),
         }
 
         backup_info: BackupInfo = {

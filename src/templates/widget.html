@@ -19,7 +19,7 @@
     {{ snapshot_id }} - {{ snapshot_time }}
   </p>
   <ul class="list-horizontal-text color-subdued">
-    <li>{{ snapshots_count }} snapshots</li>
+    <li>{{ snapshots_count }} {% if snapshots_count == 1 %}snapshot{% else %}snapshots{% endif %}</li>
     {% if not hide_file_count %}
     <li>{{ total_file_count }} files</li>
     {% endif %}
