@@ -1,0 +1,13 @@
+[project]
+name = "restic-glance-extension"
+version = "0.1.1"
+description = "Glance extension for a Restic repository information widget"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.121.2",
+    "humanize>=4.14.0",
+    "jinja2>=3.1.6",
+    "python-dateutil>=2.9.0.post0",
+    "uvicorn>=0.38.0",
+]

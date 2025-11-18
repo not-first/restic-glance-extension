@@ -1,77 +1,146 @@
+import asyncio
 import logging
-import threading
-import time
-import os
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
+
 from src.config import config
 from src.restic import ResticRepo
-from datetime import datetime, timezone
-from dateutil.parser import isoparse
-import humanize
+from src.service import format_backup_data
+from src.types import BackupInfo
+from src.widget import render_widget
 
+# setup logging
 uvicorn_logger = logging.getLogger("uvicorn.error")
-logging.basicConfig(format="%(levelname)s:    %(message)s", level=uvicorn_logger.getEffectiveLevel())
+logging.basicConfig(
+    format="%(levelname)s:    %(message)s", level=uvicorn_logger.getEffectiveLevel()
+)
 logger = logging.getLogger("restic-api")
 
-app = FastAPI()
+# in-memory cache for restic repo info
+repos: dict[str, ResticRepo] = {}
+cache: dict[str, BackupInfo | dict[str, str]] = {}
+cache_task: asyncio.Task | None = None
 
-@app.get("/")
-async def root():
-    return {"message": "Restic API is running!"}
 
-# Simply in memory cache for restic repo info
-repos = {}
-cache = {}
+# periodically update cache for all repos
+async def update_cache_periodically() -> None:
+    logger.info("starting initial cache fetch for all repos")
 
-def update_cache():
-    logger.info("Fetching initial cache for all repos")
+    # initial cache population
     for repo_alias, repo_config in config.RESTIC_CONFIG.items():
         repos[repo_alias] = ResticRepo(repo_config)
-        cache[repo_alias] = repos[repo_alias].get_backup_info()
+        try:
+            cache[repo_alias] = repos[repo_alias].get_backup_info()
+            logger.info(f"initial cache populated for repo: {repo_alias}")
+        except Exception as e:
+            logger.error(f"failed to populate initial cache for repo {repo_alias}: {e}")
+            cache[repo_alias] = {"error": f"failed to initialize: {str(e)}"}
 
+    # periodic updates
     while True:
-        time.sleep(config.CACHE_INTERVAL)
-        logger.info("Updating cache for all repos")
-        for repo_alias, repo in repos.items():
-            cache[repo_alias] = repo.get_backup_info()
+        await asyncio.sleep(config.CACHE_INTERVAL)
+        logger.info("updating cache for all repos")
 
+        for repo_alias, repo in repos.items():
+            try:
+                cache[repo_alias] = repo.get_backup_info()
+                logger.debug(f"cache updated for repo: {repo_alias}")
+            except Exception as e:
+                logger.error(f"failed to update cache for repo {repo_alias}: {e}")
+                cache[repo_alias] = {"error": f"cache update failed: {str(e)}"}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # manage application lifespan events
+    global cache_task
+
+    # startup: start cache update task
+    logger.info("starting application and cache update task")
+    cache_task = asyncio.create_task(update_cache_periodically())
+
+    yield
+
+    # shutdown: cancel cache task
+    logger.info("shutting down application")
+    if cache_task:
+        cache_task.cancel()
+        try:
+            await cache_task
+        except asyncio.CancelledError:
+            logger.info("cache update task cancelled successfully")
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+# root endpoint for health check
+@app.get("/")
+async def root() -> dict[str, str]:
+    return {"message": "restic api is running!"}
+
+
+# get backup widget html for a specific repository
 @app.get("/{repo}")
-async def get_backups(repo: str, request: Request):
-    limit = int(request.query_params.get("limit", 1))
-    data = cache.get(repo, {"error": f"No cache available for repo '{repo}'."})
-    if "error" in data:
+async def get_backups(repo: str, request: Request) -> HTMLResponse:
+    if repo not in config.RESTIC_CONFIG:
+        available_repos = ", ".join(config.RESTIC_CONFIG.keys())
+        logger.warning(f"request for unknown repo: {repo}")
         return HTMLResponse(
-            content=f"<p class='color-negative'>Error: {data['error']}</p>",
-            headers={"Widget-Title": "Backups", "Widget-Content-Type": "html"}
+            content=f"<p class='color-negative'>error: repository '{repo}' not found. "
+            f"available repositories: {available_repos}</p>",
+            status_code=404,
+            headers={"Widget-Title": "backups", "Widget-Content-Type": "html"},
         )
 
-    snaps = data.get("all_snapshots", [])[:limit]
-    for s in snaps:
-        # Make sure to use short_id for consistency
-        s["id"] = s.get("short_id", "")
-        dt = isoparse(s["time"])
-        s["readable_time"] = humanize.naturaltime(datetime.now(timezone.utc) - dt)
+    # get data from cache
+    data = cache.get(repo)
+    if not data:
+        logger.warning(f"no cache available for repo: {repo}")
+        return HTMLResponse(
+            content="<p class='color-negative'>error: cache not yet initialized. please wait.</p>",
+            status_code=503,
+            headers={"Widget-Title": "backups", "Widget-Content-Type": "html"},
+        )
 
-    if request.query_params.get("autorestic-icon", "false").lower() == "true":
-        for s in snaps:
-            tags = s.get("tags", [])
-            s["method"] = "cron" if "ar:cron" in tags else "manual"
+    # check for errors in cached data
+    if "error" in data:
+        logger.warning(f"error in cached data for repo {repo}: {data['error']}")
+        return HTMLResponse(
+            content=f"<p class='color-negative'>error: {data['error']}</p>",
+            headers={"Widget-Title": "backups", "Widget-Content-Type": "html"},
+        )
 
-    data["latest_snapshot"] = snaps[0] if snaps else {}
-    data["other_snapshots"] = snaps[1:] if len(snaps) > 1 else []
-
-    # Add hide-file-count parameter
-    data["hide_file_count"] = request.query_params.get("hide-file-count", "false").lower() == "true"
-
-    from src.widget import parse_widget_html
-    return HTMLResponse(
-        content=parse_widget_html(data),
-        headers={"Widget-Title": "Backups", "Widget-Content-Type": "html"}
+    # parse query parameters
+    limit = int(request.query_params.get("limit", "1"))
+    show_autorestic_icon = (
+        request.query_params.get("autorestic-icon", "false").lower() == "true"
+    )
+    hide_file_count = (
+        request.query_params.get("hide-file-count", "false").lower() == "true"
     )
 
-def start_cache_thread():
-    thread = threading.Thread(target=update_cache, daemon=True)
-    thread.start()
+    try:
+        # format and render widget
+        widget_data = format_backup_data(
+            data,  # type: ignore - we checked for error above
+            limit=limit,
+            show_autorestic_icon=show_autorestic_icon,
+            hide_file_count=hide_file_count,
+        )
+        html_content = render_widget(widget_data)
 
-start_cache_thread()
+        return HTMLResponse(
+            content=html_content,
+            headers={"Widget-Title": "backups", "Widget-Content-Type": "html"},
+        )
+    except Exception as e:
+        logger.error(f"failed to render widget for repo {repo}: {e}")
+        return HTMLResponse(
+            content=f"<p class='color-negative'>error rendering widget: {str(e)}</p>",
+            status_code=500,
+            headers={"Widget-Title": "backups", "Widget-Content-Type": "html"},
+        )
