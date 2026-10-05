@@ -32,7 +32,6 @@ class ResticRepo:
         command_kind = args[0] if args else "unknown"
         try:
             restic_command = ["restic", "-r", self.url] + list(args)
-            logger.debug(f"running restic command: {' '.join(restic_command)}")
 
             env = os.environ.copy()
             env.update(self.env)
