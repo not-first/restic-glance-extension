@@ -23,6 +23,17 @@ logger = logging.getLogger("restic-api")
 repos: dict[str, ResticRepo] = {}
 cache: dict[str, BackupInfo | dict[str, str]] = {}
 cache_task: asyncio.Task | None = None
+stale_repos: set[str] = set()
+
+
+def publish_refresh(repo_alias: str, data: BackupInfo | dict[str, str]) -> None:
+    previous = cache.get(repo_alias)
+    if "error" in data and previous and "error" not in previous:
+        stale_repos.add(repo_alias)
+        logger.warning("refresh failed for %s; retaining last successful data", repo_alias)
+        return
+    cache[repo_alias] = data
+    stale_repos.discard(repo_alias)
 
 
 # periodically update cache for all repos
@@ -35,11 +46,13 @@ async def update_cache_periodically() -> None:
         try:
             # use per-repo stats mode if set, otherwise use global default
             stats_mode = repo_config.get("stats_mode", config.STATS_MODE)
-            cache[repo_alias] = repos[repo_alias].get_backup_info(stats_mode)
-            logger.info(f"initial cache populated for repo: {repo_alias}")
+            data = repos[repo_alias].get_backup_info(stats_mode)
+            publish_refresh(repo_alias, data)
+            if "error" not in data:
+                logger.info(f"initial cache populated for repo: {repo_alias}")
         except Exception as e:
             logger.error(f"failed to populate initial cache for repo {repo_alias}: {e}")
-            cache[repo_alias] = {"error": f"failed to initialize: {str(e)}"}
+            publish_refresh(repo_alias, {"error": f"failed to initialize: {str(e)}"})
 
     # periodic updates
     while True:
@@ -51,11 +64,11 @@ async def update_cache_periodically() -> None:
                 # use per-repo stats mode if set, otherwise use global default
                 repo_config = config.RESTIC_CONFIG[repo_alias]
                 stats_mode = repo_config.get("stats_mode", config.STATS_MODE)
-                cache[repo_alias] = repo.get_backup_info(stats_mode)
-                logger.debug(f"cache updated for repo: {repo_alias}")
+                publish_refresh(repo_alias, repo.get_backup_info(stats_mode))
+                logger.debug(f"cache refresh processed for repo: {repo_alias}")
             except Exception as e:
                 logger.error(f"failed to update cache for repo {repo_alias}: {e}")
-                cache[repo_alias] = {"error": f"cache update failed: {str(e)}"}
+                publish_refresh(repo_alias, {"error": f"cache update failed: {str(e)}"})
 
 
 @asynccontextmanager
@@ -116,6 +129,7 @@ async def get_backups(repo: str, request: Request) -> HTMLResponse:
         logger.warning(f"error in cached data for repo {repo}: {data['error']}")
         return HTMLResponse(
             content=f"<p class='color-negative'>error: {data['error']}</p>",
+            status_code=503,
             headers={"Widget-Title": "backups", "Widget-Content-Type": "html"},
         )
 
@@ -137,6 +151,11 @@ async def get_backups(repo: str, request: Request) -> HTMLResponse:
             hide_file_count=hide_file_count,
         )
         html_content = render_widget(widget_data)
+        if repo in stale_repos:
+            html_content = (
+                "<p class='color-negative'>Showing cached backup data; "
+                "the latest refresh failed.</p>" + html_content
+            )
 
         return HTMLResponse(
             content=html_content,

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import subprocess
+import time
 from typing import Any
 
 from src.config import config as global_config
@@ -27,9 +28,10 @@ class ResticRepo:
 
     # run a restic command with the given arguments
     def run_restic(self, *args: str) -> dict[str, Any]:
+        started = time.monotonic()
+        command_kind = args[0] if args else "unknown"
         try:
             restic_command = ["restic", "-r", self.url] + list(args)
-            logger.debug(f"running restic command: {' '.join(restic_command)}")
 
             env = os.environ.copy()
             env.update(self.env)
@@ -39,7 +41,15 @@ class ResticRepo:
                 capture_output=True,
                 text=True,
                 env=env,
-                timeout=300,  # 5 minute timeout for long operations
+                timeout=global_config.COMMAND_TIMEOUT,
+            )
+
+            logger.info(
+                "restic %s finished in %.1fs (deadline=%ss, exit=%s)",
+                command_kind,
+                time.monotonic() - started,
+                global_config.COMMAND_TIMEOUT,
+                result.returncode,
             )
 
             if result.returncode != 0:
@@ -58,7 +68,12 @@ class ResticRepo:
                 return {"error": f"invalid json response: {str(e)}"}
 
         except subprocess.TimeoutExpired:
-            logger.error("restic command timed out after 300 seconds")
+            logger.error(
+                "restic %s timed out after %.1fs (deadline=%ss)",
+                command_kind,
+                time.monotonic() - started,
+                global_config.COMMAND_TIMEOUT,
+            )
             return {"error": "restic command timed out"}
         except Exception as e:
             logger.error(f"unexpected error running restic: {e}")

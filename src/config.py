@@ -16,6 +16,7 @@ class ConfigurationError(Exception):
 # application configuration loaded from environment variables
 class Config:
     CACHE_INTERVAL: int
+    COMMAND_TIMEOUT: int
     REPOS: list[str]
     REPOS_BASE_PATH: str
     STATS_MODE: str
@@ -28,6 +29,11 @@ class Config:
             self.CACHE_INTERVAL = int(os.getenv("RESTIC_CACHE_INTERVAL", "3600"))
         except ValueError:
             raise ConfigurationError("RESTIC_CACHE_INTERVAL must be a valid integer")
+
+        try:
+            self.COMMAND_TIMEOUT = int(os.getenv("RESTIC_COMMAND_TIMEOUT", "300"))
+        except ValueError:
+            raise ConfigurationError("RESTIC_COMMAND_TIMEOUT must be a valid integer")
 
         # load repos list
         repos_env = os.getenv("RESTIC_REPOS", "").strip()
@@ -99,6 +105,9 @@ class Config:
         # validate configuration is complete and correct
         if self.CACHE_INTERVAL <= 0:
             raise ConfigurationError("RESTIC_CACHE_INTERVAL must be positive")
+
+        if self.COMMAND_TIMEOUT <= 0:
+            raise ConfigurationError("RESTIC_COMMAND_TIMEOUT must be positive")
 
         logger.info(
             f"configuration validated: {len(self.RESTIC_CONFIG)} repositories, "
