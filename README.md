@@ -57,15 +57,9 @@ Note that this alias does not have to correspond to the name of the repo folder 
 `RESTIC_CACHE_INTERVAL` can be set to a time in seconds, where the cache will be updated with the repo info every interval. _If not supplied it defaults to 3600 (1 hour)._
   - When the cache is updated, it fetches the restic repo stats and snapshot info. The humanised time difference is calculated for each request.
 
-`RESTIC_COMMAND_TIMEOUT` sets the positive integer deadline in seconds for each
-Restic command (default: 300). Keep the default until normal operational timing
-supports a different finite budget; increasing it does not guarantee cold-cache
-readiness. Command logs include elapsed duration, configured deadline and exit
-status, without the repository URL or command arguments.
+`RESTIC_COMMAND_TIMEOUT` sets the positive integer timout in seconds for each restic command (default: 300). Any commands that take longer than this time to run are treated as an error.
 
-If a scheduled refresh fails, the widget retains its last successful data and
-displays a stale-data warning. A repository without any successful data returns
-HTTP 503. Refresh scheduling and stats modes are unchanged.
+If a scheduled refresh fails, the widget retains its last successful data and displays a stale-data warning. A repository without any successful data returns HTTP 503.
 
 `RESTIC_STATS_MODE` determines what statistics are displayed for your repositories. Valid values are:
   - `repository-size` (default): Shows the actual disk space used by the repository on your storage backend. This represents the total size of all backup data including deduplication.
